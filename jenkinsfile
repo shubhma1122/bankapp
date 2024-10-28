@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Git Clone') {
+            steps {
+                git url: "https://github.com/shubhma1122/bankapp.git", branch: "main"
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t bankapp:latest .'
+            }
+        }
+        stage('Push Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker tag bankapp:latest $DOCKER_USERNAME/bankapp:latest'
+                    sh 'docker push $DOCKER_USERNAME/bankapp:latest'
+                }
+            }
+        }
+        stage('Deploy Container') {
+            steps {
+                sh 'docker-compose up -d' // Use docker-compose if you have a docker-compose.yml file
+            }
+        }
+    }
+}
